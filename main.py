@@ -1,55 +1,43 @@
-import os
 import asyncio
 from telethon import TelegramClient, events
+import os
+import nest_asyncio
 
-# 🔧 ВСТАВЬ СВОИ ДАННЫЕ СЮДА:
-api_id = int("23682855")  # пример: 23682855
-api_hash = "ee64f83e641de11b5ff496694fcc13e4"   # пример: ee64f83e641de11b5ff496694fcc13e4
-bot_token = "8566820879:AAG2lim7a1rmq0RcYyjFXLV14uAOseHwxIU"  # пример: 123456789:ABCdefGhijkLmnoPQRstuVWxyz
+# Применяем фикс для Render
+nest_asyncio.apply()
 
-# 📢 Канал, откуда брать посты
+# === НАСТРОЙКИ ===
+api_id = 23682855
+api_hash = "ee64f83e641de11b5ff496694fcc13e4"
+bot_token = "8566820879:AAG2lim7a1rmq0RcYyjFXLV14uAOseHwxIU"
+
+# Каналы
 source_channel = "https://t.me/grow_a_garden_stock_info"
+target_channel = "https://t.me/brbrbrbra11"
 
-# 🎯 Канал, куда публиковать
-target_channel = "@brbrbrbra11"
+# === КЛИЕНТ ===
+client = TelegramClient("bot", api_id, api_hash).start(bot_token=bot_token)
 
-# Инициализация клиента
-client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_token)
+print(f"✅ Бот запущен и слушает канал: {source_channel}")
 
-# Функция очистки текста
-def clean_text(text):
-    if not text:
-        return text
-    lower = text.lower()
-    marker = "группа со стоками"
-    if marker in lower:
-        idx = lower.index(marker)
-        return text[:idx].strip()
-    return text.strip()
-
-# Обработка новых сообщений
 @client.on(events.NewMessage(chats=source_channel))
 async def handler(event):
-    text = ""
-    if event.message.message:
-        text = event.message.message
-    elif event.message.caption:
-        text = event.message.caption
+    text = event.raw_text
 
-    text = clean_text(text)
+    # Если хочешь — здесь можно изменить текст поста перед пересылкой
+    # Например:
+    if "группа со стоками" in text:
+        text = text.split("группа со стоками")[0].strip()
 
     try:
-        if event.message.media:
-            await client.send_file(target_channel, event.message.media, caption=text or None)
-        else:
-            await client.send_message(target_channel, text or " ")
+        await client.send_message(target_channel, text)
+        print("📨 Сообщение переслано!")
     except Exception as e:
-        print("Ошибка при отправке:", e)
+        print("⚠️ Ошибка при отправке:", e)
 
-# Запуск
 async def main():
-    print("✅ Бот запущен и слушает канал:", source_channel)
     await client.run_until_disconnected()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# === ЗАПУСК ===
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
